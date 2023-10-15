@@ -1,0 +1,262 @@
+#include <bits/stdc++.h>
+using namespace std;
+
+//source,price,time,mode,destination
+vector<pair<pair<float,float>,pair<char,int>>> adj[1000000];
+unordered_map<string,int> statemappingnumber;
+unordered_map<int,string> numbermappingstate;
+static int countOfState;
+
+void pathremove(string &s){
+    int n=s.size()-1;
+    while(1){
+        char c = s.back();
+        if(c=='*'){
+            s.pop_back();
+            break;
+        }else{
+            s.pop_back();
+        }
+    }
+    return;
+}
+
+void dfs(int s,int d,vector<int> &vis,string &ans,string path){
+    if(s==d){
+        ans+=path;
+        ans+="?";
+        return;
+    }
+    
+    vis[s]=1;
+    
+    for(auto it:adj[s]){
+        if(vis[it.second.second]==0){
+            path.push_back('*');
+            path+=numbermappingstate[s];
+            path+=("_");
+            path.push_back(it.second.first);
+            path+=("_");
+            path+=numbermappingstate[it.second.second];
+            dfs(it.second.second,d,vis,ans,path);
+            pathremove(path);
+        } 
+    }
+    vis[s]=0;
+}
+
+string allRoutee(int source,int destination){
+    vector<int> vis(countOfState,0);
+    string ans = "";
+    string path = "";
+    dfs(source,destination,vis,ans,path);
+    return ans;
+}
+
+void addInGraph(int source,int destination,float price,float time,char mode){
+    adj[source].push_back({{price,time},{mode,destination}});
+}
+
+void makeGraph(string source,string destination,float price,float time,char mode){
+    int source_num,destination_num;
+    if(statemappingnumber.find(source)!=statemappingnumber.end()){
+        source_num = statemappingnumber[source];
+    }else{
+        statemappingnumber[source]=countOfState;
+        source_num=countOfState;
+        countOfState++;
+    }
+    
+    if(statemappingnumber.find(destination)!=statemappingnumber.end()){
+        destination_num = statemappingnumber[destination];
+    }else{
+        statemappingnumber[destination]=countOfState;
+        destination_num=countOfState;
+        countOfState+=1;
+    }
+    addInGraph(source_num,destination_num,price,time,mode);
+}
+
+string fastestRoute(int source,int destination){
+    priority_queue<pair<float,pair<int,string>>,vector<pair<float,pair<int,string>>>,greater<pair<float,pair<int,string>>>> pq;
+    pq.push({0.0,{source,""}});
+    vector<int> vis(countOfState,0);
+    
+    for(auto it:statemappingnumber){
+        numbermappingstate[it.second]=it.first;
+    }
+    
+    while(!pq.empty()){
+        float time = pq.top().first;
+        int node = pq.top().second.first;
+        string path = pq.top().second.second;
+        pq.pop();
+        vis[node]=1;
+        
+        if(node == destination){
+            string ans = "";
+            int temp_num=0;
+            string temp_mode ="";
+            string temp_source=numbermappingstate[source];
+            string temp_destination="";
+           
+            for(int i=1;i<path.size();i++){
+                if(path[i]==' '){
+                        ans+="Take ";
+                        ans+=temp_mode;
+                        ans+=" From ";
+                        ans+=temp_source;
+                        ans+=" to ";
+                        temp_destination=numbermappingstate[temp_num];
+                        ans+=temp_destination;
+                        ans+=" then ";
+                        
+                        temp_num=0;
+                        temp_mode ="";
+                        temp_source=temp_destination;
+                        temp_destination="";
+                }else if(path[i]=='_'){
+                    continue;
+                }else if(path[i]>='A' && path[i]<='Z'){
+                    if(path[i]=='B'){
+                        temp_mode+="Bus";
+                    }else if(path[i]=='F'){
+                        temp_mode+="Flight";
+                    }else{
+                        temp_mode+="Train";
+                    }
+                }else{
+                    temp_num=temp_num*10+(path[i]-'0');
+                }
+            }
+            ans+="it will take ";
+            ans+=to_string(time);
+            ans+=" hours that's Fastest Route";
+            return ans;
+        }
+        
+        for(auto it:adj[node]){
+            if(vis[it.second.second]==0){
+                string temp = " ";
+                temp+=to_string(it.second.second);
+                temp+="_";
+                temp+=it.second.first;
+                temp+=" ";
+                pq.push({time+it.first.second,{it.second.second,path+temp}});
+            }
+        }
+    }
+    return"no route";
+}
+
+string cheapestRoute(int source,int destination){
+    priority_queue<pair<float,pair<int,string>>,vector<pair<float,pair<int,string>>>,greater<pair<float,pair<int,string>>>> pq;
+    pq.push({0,{source,""}});
+    vector<int> vis(countOfState,0);
+    
+    
+    while(!pq.empty()){
+        float price = pq.top().first;
+        int node = pq.top().second.first;
+        string path = pq.top().second.second;
+        pq.pop();
+        vis[node]=1;
+
+        
+        if(node == destination){
+            string ans = "";
+            int temp_num=0;
+            string temp_mode ="";
+            string temp_source=numbermappingstate[source];
+            string temp_destination="";
+           
+            for(int i=1;i<path.size();i++){
+                if(path[i]==' '){
+                        ans+="Take ";
+                        ans+=temp_mode;
+                        ans+=" From ";
+                        ans+=temp_source;
+                        ans+=" to ";
+                        temp_destination=numbermappingstate[temp_num];
+                        ans+=temp_destination;
+                        ans+=" then ";
+                        
+                        temp_num=0;
+                        temp_mode ="";
+                        temp_source=temp_destination;
+                        temp_destination="";
+                }else if(path[i]=='_'){
+                    continue;
+                }else if(path[i]>='A' && path[i]<='Z'){
+                    if(path[i]=='B'){
+                        temp_mode+="Bus";
+                    }else if(path[i]=='F'){
+                        temp_mode+="Flight";
+                    }else{
+                        temp_mode+="Train";
+                    }
+                }else{
+                    temp_num=temp_num*10+(path[i]-'0');
+                }
+            }
+            ans+=" it will take ";
+            ans+=to_string(price);
+            ans+="Rs that is minimum price";
+            return ans;
+        }
+        
+        for(auto it:adj[node]){
+            if(vis[it.second.second]==0){
+                string temp = " ";
+                temp+=to_string(it.second.second);
+                temp+="_";
+                temp+=it.second.first;
+                temp+=" ";
+                pq.push({price+it.first.first,{it.second.second,path+temp}});
+            }
+        }
+    }
+    return"no route";
+}
+
+
+int main(){
+    makeGraph("Delhi","Chandigarh",2000.0,2.0,'F');
+    makeGraph("Delhi","Chandigarh",700.0,6.0,'B');
+    makeGraph("Delhi","Patiala",1100.0,6.0,'T');
+    makeGraph("Delhi","Patiala",900.0,8.0,'B');
+    makeGraph("Delhi","Jammu",7000.0,4.2,'F');
+    makeGraph("Jammu","Katra",200.0,2.0,'B');
+    makeGraph("Jammu","Patiala",1100.0,11.0,'T');
+    makeGraph("Patiala","Katra",800.0,6.0,'T');
+    makeGraph("Patiala","Katra",700.0,7.0,'B');
+    
+    
+    makeGraph("Chandigarh","Delhi",2000.0,2.0,'F');
+    makeGraph("Chandigarh","Delhi",700.0,6.0,'B');
+    makeGraph("Patiala","Delhi",1100.0,6.0,'T');
+    makeGraph("Patiala","Delhi",900.0,8.0,'B');
+    makeGraph("Jammu","Delhi",7000.0,4.2,'F');
+    makeGraph("Katra","Jammu",200.0,2.0,'B');
+    makeGraph("Patiala","Jammu",1100.0,11.0,'T');
+    makeGraph("Katra","Patiala",800.0,6.0,'T');
+    makeGraph("Katra","Patiala",700.0,7.0,'B');
+
+    for(auto it:statemappingnumber){
+        numbermappingstate[it.second]=it.first;
+    }
+
+    // for(int i=0;i<countOfState;i++){
+    //     cout<<"From "<<numbermappingstate[i]<<" to"<<endl;
+    //     for(auto it:adj[i]){
+    //         cout<<numbermappingstate[it.second.second]<<" ";
+    //     }
+    //     cout<<endl;
+    // }
+    
+    // cout<<allRoutee(statemappingnumber["Delhi"],statemappingnumber["Katra"]);
+    cout<<cheapestRoute(statemappingnumber["Delhi"],statemappingnumber["Katra"]);
+    // cout<<fastestRoute(statemappingnumber["Delhi"],statemappingnumber["Katra"]);
+    
+	return 0;
+}
